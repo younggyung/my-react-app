@@ -21,7 +21,6 @@ function Nav(props){
         props.onChangeMode(Number(event.target.id));
       }}>{t.title}</a></li>);
   };
-
   return <nav>
   <ol>
     {lis}
@@ -51,21 +50,45 @@ function Create(props){
     </article>
 }
 
+function Update(props){
+  const[title,setTitle] = useState(props.title);
+  const[body, setBody] = useState(props.body);
+
+  return <article>
+    <h2>Update</h2>
+    <form onSubmit={event=>{
+      event.preventDefault();
+      const title = event.target.title.value;
+      const body = event.target.body.value;
+      props.onUpdate(title,body);
+    }}>
+    <p><input type="text" name="title" placeholder='title' value={title} onChange={event=>{
+      setTitle(event.target.value);
+      
+    }}/></p>
+    <p><textarea name="body"  placeholder='body' value={body} onChange={event=>{
+      setBody(event.target.value);
+    }}/></p>
+    <p><input type='submit' value="update"/></p>
+    </form>
+  </article>
+} 
+
 function App() {
   const [mode, setMode] = useState('WELCOME');
   const [id ,setId] = useState(null);
   const [nextId, setNextId] = useState(4);
-  console.log(nextId);
 
-  const [topics, setTopics] = useState( [
+  const [topics, setTopics] = useState( [ 
     {id:1, title:"html",body:'html is ...'},
     {id:2, title:"css",body:'css is ...'},
-    {id:3, title:"js",body:'js is ...'}
+    {id:3, title:"js",body:'js is ...'} 
   ]);
   let content = null;
+  let contextControl = null;
   if(mode ==='WELCOME'){
     content = <Article title="Welcome" body="Hello, WEB"></Article>
-  }else if(mode === 'READ'){
+  }else if(mode === 'READ'){ 
     let title,body = null;
     for(let i = 0 ; i<topics.length;i++){
       if(topics[i].id ===id){
@@ -74,6 +97,35 @@ function App() {
       }
     }
     content = <Article title={title} body={body}></Article>
+    contextControl = <>
+      <li><a href={'/update/' + id} onClick={event => {
+      event.preventDefault();
+      setMode('UPDATE');
+    } }>Update</a></li>
+    <li><input type='button'value='delete' onClick={event=>{
+      //삭제로직
+      const newTopics = [...topics];
+      newTopics.splice(newTopics.findIndex((o)=>o.id===id),1);
+      let confirm = window.confirm("진짜삭제?")
+      if(confirm == true){
+      setTopics(newTopics);
+      setMode('WELCOME');}
+
+      /*다른방법 :: 
+      const newTopic = []
+      for(let i ; i<topics.length;i++){
+        if(topics[i].id !==id){
+          newTopics.push(topics[i];
+        }
+      }
+      setTopics(newTopics);
+      setMode('WELCOME');
+      */
+
+
+    }}/></li>
+    </>
+
   }else if(mode ==='CREATE'){
     content = <Create onCreate={(title,body)=>{
         const newTopic = {id:nextId,title:title,body:body};
@@ -84,8 +136,28 @@ function App() {
         setId(nextId);
         setNextId(nextId+1);
     }}></Create>
-  }
-
+  }else if(mode === 'UPDATE'){
+    //topic배열에서 꺼내주는 코드
+    let title,body = null;
+    for(let i = 0 ; i<topics.length;i++){
+      if(topics[i].id ===id){
+        title = topics[i].title;
+        body = topics[i].body
+      }
+    }
+      content = <Update title={title} body={body} onUpdate={(title,body)=>{
+        const updateTopic = {id:id,title:title,body:body};
+        const newTopics = [...topics];
+      for(let i=0; i<topics.length;i++){
+        if(newTopics[i].id === id){
+          newTopics[i] = updateTopic;
+          break;
+        }
+      }
+        setTopics(newTopics);
+        setMode('READ');
+      }}></Update>}
+  
   return (
     <div>
       <Header title="WEB" onChangeMode={()=>{
@@ -96,11 +168,14 @@ function App() {
         setId(_id);
       }}></Nav>
       {content}
-      <a href="/" onClick={(event)=>{
+      <ul>
+      <li><a href="/" onClick={(event)=>{
         event.preventDefault();
         setMode('CREATE');
       }
-      }>create</a>
+      }>create</a></li>
+      {contextControl}
+      </ul>
     </div>
   );
 }
